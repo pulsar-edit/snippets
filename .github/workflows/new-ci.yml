@@ -1,0 +1,11 @@
+on: [push]
+
+jobs:
+  atom_test:
+    runs-on: ubuntu-latest
+    name: See if this works
+    steps:
+      - name: Fingers Crossed
+        uses: confused-Techie/action-pulsar-dependency@v1.0.0
+        with:
+          package-to-test: "snippets"
