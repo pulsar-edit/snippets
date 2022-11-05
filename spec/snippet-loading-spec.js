@@ -1,6 +1,5 @@
 const path = require('path');
 const fs = require('fs');
-const mkdirp = require('mkdirp');
 const temp = require('temp').track();
 
 describe("Snippet Loading", () => {
@@ -127,7 +126,7 @@ describe("Snippet Loading", () => {
 
   describe("when ~/.atom/snippets.json exists", () => {
     beforeEach(() => {
-      mkdirp.sync(configDirPath);
+      fs.mkdirSync(configDirPath, { recursive: true });
       fs.writeFileSync(path.join(configDirPath, 'snippets.json'), `\
 {
   ".foo": {
@@ -156,7 +155,7 @@ describe("Snippet Loading", () => {
 
     describe("when that file changes", () => {
       it("reloads the snippets", () => {
-        mkdirp.sync(configDirPath);
+        fs.mkdirSync(configDirPath, { recursive: true });
         fs.writeFileSync(path.join(configDirPath, 'snippets.json'), `\
 {
 ".foo": {
@@ -175,7 +174,7 @@ describe("Snippet Loading", () => {
         });
 
         runs(() => {
-          mkdirp.sync(configDirPath);
+          fs.mkdirSync(configDirPath, { recursive: true });
           fs.writeFileSync(path.join(configDirPath, 'snippets.json'), "");
         });
 
@@ -186,7 +185,7 @@ describe("Snippet Loading", () => {
 
   describe("when ~/.atom/snippets.cson exists", () => {
     beforeEach(() => {
-      mkdirp.sync(configDirPath);
+      fs.mkdirSync(configDirPath, { recursive: true });
       fs.writeFileSync(path.join(configDirPath, 'snippets.cson'), `\
 ".foo":
   "foo snippet":
@@ -211,7 +210,7 @@ describe("Snippet Loading", () => {
 
     describe("when that file changes", () => {
       it("reloads the snippets", () => {
-        mkdirp.sync(configDirPath);
+        fs.mkdirSync(configDirPath, { recursive: true });
         fs.writeFileSync(path.join(configDirPath, 'snippets.cson'), `\
 ".foo":
   "foo snippet":
@@ -226,7 +225,7 @@ describe("Snippet Loading", () => {
         });
 
         runs(() => {
-          mkdirp.sync(configDirPath);
+          fs.mkdirSync(configDirPath, { recursive: true });
           fs.writeFileSync(path.join(configDirPath, 'snippets.cson'), "");
         });
 
