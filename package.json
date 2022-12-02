@@ -3,7 +3,7 @@
   "version": "1.6.1",
   "main": "./lib/snippets",
   "description": "Expand snippets matching the current prefix with `tab`.",
-  "repository": "https://github.com/atom/snippets",
+  "repository": "https://github.com/pulsar-edit/snippets",
   "license": "MIT",
   "engines": {
     "atom": "*"
