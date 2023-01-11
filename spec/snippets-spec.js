@@ -19,7 +19,7 @@ describe("Snippets extension", () => {
     spyOn(Snippets, 'loadAll');
     spyOn(Snippets, 'getUserSnippetsPath').andReturn('');
 
-    waitsForPromise(() => atom.workspace.open('sample.js'));
+    waitsForPromise(() => atom.workspace.open(path.join(__dirname, 'fixtures', 'sample.js')));
     waitsForPromise(() => atom.packages.activatePackage('language-javascript'));
     waitsForPromise(() => atom.packages.activatePackage('snippets'));
 
@@ -1183,13 +1183,13 @@ foo\
     });
   });
 
-  describe("when atom://.atom/snippets is opened", () => {
-    it("opens ~/.atom/snippets.cson", () => {
+  describe("when atom://.pulsar/snippets is opened", () => {
+    it("opens ~/.pulsar/snippets.cson", () => {
       jasmine.unspy(Snippets, 'getUserSnippetsPath');
       atom.workspace.destroyActivePaneItem();
       const configDirPath = temp.mkdirSync('atom-config-dir-');
       spyOn(atom, 'getConfigDirPath').andReturn(configDirPath);
-      atom.workspace.open('atom://.atom/snippets');
+      atom.workspace.open('atom://.pulsar/snippets');
 
       waitsFor(() => atom.workspace.getActiveTextEditor() != null);
 
