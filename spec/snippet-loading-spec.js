@@ -81,6 +81,24 @@ describe("Snippet Loading", () => {
     });
   });
 
+  fit("registers a command if a package snippet defines one", () => {
+    waitsForPromise(() => {
+      return atom.packages.activatePackage("snippets").then(
+        ({mainModule}) => {
+          return new Promise((resolve) => {
+            mainModule.onDidLoadSnippets(resolve);
+          });
+        }
+      );
+    });
+
+    runs(() => {
+      expect(
+        'package-with-snippets:test-command-name' in atom.commands.registeredCommands
+      ).toBe(true);
+    });
+  });
+
   it("logs a warning if package snippets files cannot be parsed", () => {
     activateSnippetsPackage();
 
@@ -93,10 +111,10 @@ describe("Snippet Loading", () => {
 
   describe("::loadPackageSnippets(callback)", () => {
     beforeEach(() => { // simulate a list of packages where the javascript core package is returned at the end
-       atom.packages.getLoadedPackages.andReturn([
+      atom.packages.getLoadedPackages.andReturn([
         atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'package-with-snippets')),
         atom.packages.loadPackage('language-javascript')
-      ])
+      ]);
     });
 
     it("allows other packages to override core packages' snippets", () => {
@@ -126,7 +144,7 @@ describe("Snippet Loading", () => {
 
   describe("when ~/.atom/snippets.json exists", () => {
     beforeEach(() => {
-      fs.mkdirSync(configDirPath, { recursive: true });
+      fs.mkdirSync(configDirPath, {recursive: true});
       fs.writeFileSync(path.join(configDirPath, 'snippets.json'), `\
 {
   ".foo": {
@@ -155,7 +173,7 @@ describe("Snippet Loading", () => {
 
     describe("when that file changes", () => {
       it("reloads the snippets", () => {
-        fs.mkdirSync(configDirPath, { recursive: true });
+        fs.mkdirSync(configDirPath, {recursive: true});
         fs.writeFileSync(path.join(configDirPath, 'snippets.json'), `\
 {
 ".foo": {
@@ -174,7 +192,7 @@ describe("Snippet Loading", () => {
         });
 
         runs(() => {
-          fs.mkdirSync(configDirPath, { recursive: true });
+          fs.mkdirSync(configDirPath, {recursive: true});
           fs.writeFileSync(path.join(configDirPath, 'snippets.json'), "");
         });
 
@@ -185,7 +203,7 @@ describe("Snippet Loading", () => {
 
   describe("when ~/.atom/snippets.cson exists", () => {
     beforeEach(() => {
-      fs.mkdirSync(configDirPath, { recursive: true });
+      fs.mkdirSync(configDirPath, {recursive: true});
       fs.writeFileSync(path.join(configDirPath, 'snippets.cson'), `\
 ".foo":
   "foo snippet":
@@ -210,7 +228,7 @@ describe("Snippet Loading", () => {
 
     describe("when that file changes", () => {
       it("reloads the snippets", () => {
-        fs.mkdirSync(configDirPath, { recursive: true });
+        fs.mkdirSync(configDirPath, {recursive: true});
         fs.writeFileSync(path.join(configDirPath, 'snippets.cson'), `\
 ".foo":
   "foo snippet":
@@ -225,7 +243,7 @@ describe("Snippet Loading", () => {
         });
 
         runs(() => {
-          fs.mkdirSync(configDirPath, { recursive: true });
+          fs.mkdirSync(configDirPath, {recursive: true});
           fs.writeFileSync(path.join(configDirPath, 'snippets.cson'), "");
         });
 

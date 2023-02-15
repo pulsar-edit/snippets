@@ -16,6 +16,7 @@ describe("Snippets extension", () => {
   };
 
   beforeEach(() => {
+    if (atom.notifications != null) { spyOn(atom.notifications, 'addError'); }
     spyOn(Snippets, 'loadAll');
     spyOn(Snippets, 'getUserSnippetsPath').andReturn('');
 
@@ -1183,13 +1184,13 @@ foo\
     });
   });
 
-  describe("when atom://.atom/snippets is opened", () => {
-    it("opens ~/.atom/snippets.cson", () => {
+  describe("when atom://.pulsar/snippets is opened", () => {
+    it("opens ~/.pulsar/snippets.cson", () => {
       jasmine.unspy(Snippets, 'getUserSnippetsPath');
       atom.workspace.destroyActivePaneItem();
       const configDirPath = temp.mkdirSync('atom-config-dir-');
       spyOn(atom, 'getConfigDirPath').andReturn(configDirPath);
-      atom.workspace.open('atom://.atom/snippets');
+      atom.workspace.open('atom://.pulsar/snippets');
 
       waitsFor(() => atom.workspace.getActiveTextEditor() != null);
 
@@ -1209,10 +1210,100 @@ foo\
     });
   });
 
+  describe("when a user snippet maps to a command", () => {
+    beforeEach(() => {
+      editor.setText('');
+      Snippets.add(
+        __filename, {
+          ".source.js": {
+            "some command snippet": {
+              body: "lorem ipsum dolor $1 sit ${2:amet}$0",
+              command: "some-command-snippet"
+            },
+            "another command snippet with a prefix": {
+              prefix: 'prfx',
+              command: 'command-with-prefix',
+              body: 'this had $0 a prefix'
+            },
+            "another snippet with neither command nor prefix": {
+              body: 'useless'
+            },
+            "another snippet with a malformed command name": {
+              command: 'i flout the RULES',
+              body: 'inconsiderate'
+            }
+          },
+          ".source.python": {
+            "some python command snippet": {
+              body: "consecuetur $0 adipiscing",
+              command: "some-python-command-snippet"
+            }
+          }
+        },
+        'snippets'
+      );
+    });
+
+    afterEach(() => {
+      Snippets.clearSnippetsForPath(__filename);
+    });
+
+    it("registers the command", () => {
+      expect(
+        "snippets:some-command-snippet" in atom.commands.registeredCommands
+      ).toBe(true);
+    });
+
+    it("complains about a malformed command name", () => {
+      const expectedMessage = `Cannot register \`i flout the RULES\` for snippet “another snippet with a malformed command name” because the command name isn’t valid. Command names must be all lowercase and use hyphens between words instead of spaces.`;
+      expect(atom.notifications.addError).toHaveBeenCalledWith(
+        `Snippets error`,
+        {
+          description: expectedMessage,
+          dismissable: true
+        }
+      );
+    });
+
+    describe("and the command is invoked", () => {
+      beforeEach(() => {
+        editor.setText('');
+      });
+
+      it("expands the snippet when the scope matches", () => {
+        atom.commands.dispatch(editor.element, 'snippets:some-command-snippet');
+        let cursor = editor.getLastCursor();
+        let pos = cursor.getBufferPosition();
+        expect(cursor.getBufferPosition()).toEqual([0, 18]);
+
+        expect(editor.getText()).toBe('lorem ipsum dolor  sit amet');
+        editor.insertText("virus");
+        expect(editor.getText()).toBe('lorem ipsum dolor virus sit amet');
+
+        simulateTabKeyEvent();
+        expect(editor.getSelectedBufferRange()).toEqual([[0, 28], [0, 32]]);
+      });
+
+      it("expands the snippet even when a prefix is defined", () => {
+        atom.commands.dispatch(editor.element, 'snippets:command-with-prefix');
+        let cursor = editor.getLastCursor();
+        let pos = cursor.getBufferPosition();
+        expect(pos.toArray().join(',')).toBe('0,9');
+        expect(editor.getText()).toBe('this had  a prefix');
+      });
+
+      it("does nothing when the scope does not match", () => {
+        atom.commands.dispatch(editor.element, 'snippets:some-python-command-snippet');
+        expect(editor.getText()).toBe("");
+      });
+    });
+  });
+
   describe("when the 'snippets:available' command is triggered", () => {
     let availableSnippetsView = null;
 
     beforeEach(() => {
+      atom.grammars.assignLanguageMode(editor, 'source.js');
       Snippets.add(__filename, {
         ".source.js": {
           "test": {
@@ -1225,8 +1316,7 @@ foo\
             body: "$1: ${2:To pass this challenge}"
           }
         }
-      }
-      );
+      });
 
       delete Snippets.availableSnippetsView;
 
