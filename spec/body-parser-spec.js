@@ -26,15 +26,32 @@ the quick brown $1fox \${2:jumped \${3:over}
     ]);
   });
 
-  it("removes interpolated variables in placeholder text (we don't currently support it)", () => {
-    const bodyTree = BodyParser.parse("module ${1:ActiveRecord::${TM_FILENAME/(?:\\A|_)([A-Za-z0-9]+)(?:\\.rb)?/(?2::\\u$1)/g}}");
-    expect(bodyTree).toEqual([
-      "module ",
-      {
-        "index": 1,
-        "content": ["ActiveRecord::", ""]
-      }
-    ]);
+  it("understands interpolated variables and if/else strings in placeholder text", () => {
+    // const bodyTree = BodyParser.parse("module ${1:ActiveRecord::${TM_FILENAME/(?:\\A|_)([A-Za-z0-9]+)(?:\\.rb)?/(?2::\\u$1)/g}}");
+
+    const bodyTree = BodyParser.parse("module ${1:ActiveRecord::${TM_FILENAME/(?:$|_)([A-Za-z0-9]+)(?:\\.rb)?/\\u$1/g}}");
+
+    expect(bodyTree).toEqual(
+      [
+        'module ',
+        {
+          index: 1,
+          content: [
+            'ActiveRecord::',
+            {
+              variable: 'TM_FILENAME',
+              substitution: {
+                find: /(?:$|_)([A-Za-z0-9]+)(?:\.rb)?/g,
+                replace: [
+                  {escape: 'u'},
+                  {backreference: 1}
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    );
   });
 
   it("skips escaped tabstops", () => {
@@ -99,7 +116,7 @@ the quick brown $1fox \${2:jumped \${3:over}
         index: 1,
         content: [],
         substitution: {
-          find: /(.)/g,
+          find: /(.)/,
           replace: [
             {escape: 'u'},
             {backreference: 1}
@@ -137,7 +154,7 @@ the quick brown $1fox \${2:jumped \${3:over}
         index: 1,
         content: [],
         substitution: {
-          find: /(.)/g,
+          find: /(.)/,
           replace: [
             {escape: 'u'},
             {backreference: 1}
@@ -150,7 +167,7 @@ the quick brown $1fox \${2:jumped \${3:over}
   });
 
   it("parses a snippet with a format string and case-control flags", () => {
-    const bodyTree = BodyParser.parse("<${1:p}>$0</${1/(.)(.*)/\\u$1$2/}>");
+    const bodyTree = BodyParser.parse("<${1:p}>$0</${1/(.)(.*)/\\u$1$2/g}>");
     expect(bodyTree).toEqual([
       '<',
       {index: 1, content: ['p']},
@@ -176,7 +193,7 @@ the quick brown $1fox \${2:jumped \${3:over}
   it("parses a snippet with an escaped forward slash in a transform", () => {
     // Annoyingly, a forward slash needs to be double-backslashed just like the
     // other escapes.
-    const bodyTree = BodyParser.parse("<${1:p}>$0</${1/(.)\\/(.*)/\\u$1$2/}>");
+    const bodyTree = BodyParser.parse("<${1:p}>$0</${1/(.)\\/(.*)/\\u$1$2/g}>");
     expect(bodyTree).toEqual([
       '<',
       {index: 1, content: ['p']},
