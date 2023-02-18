@@ -81,7 +81,7 @@ describe("Snippet Loading", () => {
     });
   });
 
-  fit("registers a command if a package snippet defines one", () => {
+  it("registers a command if a package snippet defines one", () => {
     waitsForPromise(() => {
       return atom.packages.activatePackage("snippets").then(
         ({mainModule}) => {
