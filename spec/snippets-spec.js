@@ -22,6 +22,7 @@ describe("Snippets extension", () => {
 
     waitsForPromise(() => atom.workspace.open('sample.js'));
     waitsForPromise(() => atom.packages.activatePackage('language-javascript'));
+    waitsForPromise(() => atom.packages.activatePackage('language-html'));
     waitsForPromise(() => atom.packages.activatePackage('snippets'));
 
     runs(() => {
@@ -1238,6 +1239,12 @@ foo\
               body: "consecuetur $0 adipiscing",
               command: "some-python-command-snippet"
             }
+          },
+          ".text.html": {
+            "wrap in tag": {
+              "command": "wrap-in-html-tag",
+              "body": "<${1:div}>$0</${1/[ ]+.*$//}>"
+            }
           }
         },
         'snippets'
@@ -1295,6 +1302,28 @@ foo\
       it("does nothing when the scope does not match", () => {
         atom.commands.dispatch(editor.element, 'snippets:some-python-command-snippet');
         expect(editor.getText()).toBe("");
+      });
+
+    });
+
+    describe("and the command is invoked in an HTML document", () => {
+      beforeEach(() => {
+        atom.grammars.assignLanguageMode(editor, 'text.html.basic');
+        editor.setText('');
+      });
+
+      it("expands tab stops correctly", () => {
+        atom.commands.dispatch(editor.element, 'snippets:wrap-in-html-tag');
+        let cursor = editor.getLastCursor();
+        expect(cursor.getBufferPosition()).toEqual([0, 4]);
+        expect(editor.getSelectedText()).toEqual('div');
+
+        editor.insertText("aside class=\"wat\"");
+
+        expect(editor.getText()).toBe("<aside class=\"wat\"></aside>");
+
+        simulateTabKeyEvent();
+        expect(cursor.getBufferPosition()).toEqual([0, 19]);
       });
     });
   });
