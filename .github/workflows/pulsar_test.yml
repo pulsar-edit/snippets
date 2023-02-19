@@ -15,10 +15,16 @@ jobs:
         uses: actions/checkout@v3
       - name: Setup Pulsar Editor
         uses: pulsar-edit/action-pulsar-dependency@s985-update-win-path-registration
-        with:
-          package-to-test: "snippets"
+      - name: Install dependencies (Windows)
+        if: ${{ runner.os == 'Windows' }}
+        # Currently the Pulsar process starts, but unlike *nix doesn't wait for ppm to finish, probably because pulsar.cmd needs updated
+        # So we'll fallback to ppm (still named apm) instead
+        run: apm install
+      - name: Install dependencies (*nix)
+        if: ${{ runner.os != 'Windows' }}
+        run: pulsar --package install
       - name: Run the headless Pulsar Tests
-        uses: GabrielBB/xvfb-action@v1
+        uses: GabrielBB/xvfb-action@v1.6
         with:
-          run: yarn start --test spec
-          working-directory: ./pulsar
+          run: pulsar --test spec
+          # working-directory: ./pulsar
