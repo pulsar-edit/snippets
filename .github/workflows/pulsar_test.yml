@@ -14,7 +14,7 @@ jobs:
       - name: Checkout the Latest Package Code
         uses: actions/checkout@v3
       - name: Setup Pulsar Editor
-        uses: pulsar-edit/action-pulsar-dependency@3.2
+        uses: pulsar-edit/action-pulsar-dependency@v3.2
       - name: Install dependencies (Windows)
         if: ${{ runner.os == 'Windows' }}
         # Currently the Pulsar process starts, but unlike *nix doesn't wait for ppm to finish, probably because pulsar.cmd needs updated
