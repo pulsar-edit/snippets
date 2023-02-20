@@ -14,7 +14,7 @@ jobs:
       - name: Checkout the Latest Package Code
         uses: actions/checkout@v3
       - name: Setup Pulsar Editor
-        uses: pulsar-edit/action-pulsar-dependency@s985-update-win-path-registration
+        uses: pulsar-edit/action-pulsar-dependency@3.2
       - name: Install dependencies (Windows)
         if: ${{ runner.os == 'Windows' }}
         # Currently the Pulsar process starts, but unlike *nix doesn't wait for ppm to finish, probably because pulsar.cmd needs updated
@@ -24,7 +24,7 @@ jobs:
         if: ${{ runner.os != 'Windows' }}
         run: pulsar --package install
       - name: Run the headless Pulsar Tests
-        uses: GabrielBB/xvfb-action@v1.6
+        uses: coactions/setup-xvfb@v1.0.1
         with:
           run: pulsar --test spec
           # working-directory: ./pulsar
