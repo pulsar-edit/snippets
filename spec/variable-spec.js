@@ -1,7 +1,7 @@
 const Variable = require('../lib/variable');
 const {Point} = require('atom');
 
-fdescribe('Variable', () => {
+describe('Variable', () => {
 
   let fakeCursor = {
     getCurrentWordBufferRange () { return true; },
@@ -45,13 +45,6 @@ fdescribe('Variable', () => {
     }
 
   });
-
-  // it('uses values', () => {
-  //   let vrbl = new Variable({variable: 'TM_FILENAME'});
-  //   expect(
-  //     vrbl.resolve({editor: fakeEditor})
-  //   ).toEqual('foo.rb');
-  // });
 
   it('transforms', () => {
     let vrbl = new Variable({
