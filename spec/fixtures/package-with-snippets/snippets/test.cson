@@ -20,9 +20,12 @@
 ".package-with-snippets-unique-scope":
   "Test Snippet":
     prefix: "test"
-    body: "testing 123"  
+    body: "testing 123"
 
 ".source.js":
   "Overrides a core package's snippet":
     prefix: "log"
     body: "from-a-community-package"
+  "Maps to a command":
+    body: 'lorem ipsum $0 dolor sit amet'
+    command: 'test-command-name'
