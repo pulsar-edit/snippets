@@ -361,6 +361,55 @@ describe("Snippet Body Parser", () => {
       );
     });
 
+    it('recognizes escape characters in if/else syntax', () => {
+
+      expectMatch(
+        '$1 ${1/(?:(wat)|^.*$)$/${1:?hey\\:hey:nah}/}',
+        [
+          {index: 1, content: []},
+          " ",
+          {
+            index: 1,
+            content: [],
+            substitution: {
+              find: /(?:(wat)|^.*$)$/,
+              replace: [
+                {
+                  backreference: 1,
+                  iftext: "hey:hey",
+                  elsetext: "nah"
+                }
+              ],
+            },
+          },
+        ]
+      );
+
+      expectMatch(
+        '$1 ${1/(?:(wat)|^.*$)$/${1:?hey:n\\}ah}/}',
+        [
+          {index: 1, content: []},
+          " ",
+          {
+            index: 1,
+            content: [],
+            substitution: {
+              find: /(?:(wat)|^.*$)$/,
+              replace: [
+                {
+                  backreference: 1,
+                  iftext: "hey",
+                  elsetext: "n}ah"
+                }
+              ],
+            },
+          },
+        ]
+      );
+
+    });
+
+
     it('parses nested tabstops', () => {
       expectMatch(
         '${1:place${2:hol${3:der}}}',
