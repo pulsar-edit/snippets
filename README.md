@@ -13,6 +13,7 @@ Snippets files are stored in a package's `snippets/` folder and also loaded from
 '.source.js':
   'console.log':
     'prefix': 'log'
+    'command': 'insert-console-log'
     'body': 'console.log(${1:"crash"});$2'
 ```
 
@@ -20,11 +21,11 @@ The outermost keys are the selectors where these snippets should be active, pref
 
 The next level of keys are the snippet names.
 
-Under each snippet name is a `prefix` that should trigger the snippet and a `body` to insert when the snippet is triggered.
+Under each snippet name is a `body` to insert when the snippet is triggered.
 
-`$` followed by a number are the tabs stops which can be cycled between by pressing <kbd>tab</kbd> once a snippet has been triggered.
+`$` followed by a number are the tabs stops which can be cycled between by pressing <kbd>Tab</kbd> once a snippet has been triggered.
 
-The above example adds a `log` snippet to JavaScript files that would expand to.
+The above example adds a `console.log` snippet to JavaScript files that would expand to:
 
 ```js
 console.log("crash");
@@ -32,7 +33,26 @@ console.log("crash");
 
 The string `"crash"` would be initially selected and pressing tab again would place the cursor after the `;`
 
+A snippet must define **at least one** of the following keys:
+
+### The ‘prefix’ key
+
+If a `prefix` is defined, it specifies a string that can trigger the snippet: type the string in the editor and press <kbd>Tab</kbd>. In this example, typing `log` (as its own word) and then pressing <kbd>Tab</kbd> would replace `log` with the string `console.log("crash")` as described above.
+
+Prefix completions can be suggested if partially typed thanks to the `autocomplete-snippets` package.
+
+### The ‘command’ key
+
+If a `command` is defined, it specifies a command name that can trigger the snippet. That command can be invoked from the command palette or mapped to a keyboard shortcut via your `keymap.cson`.
+
+If you defined the `console.log` snippet described above in your own `snippets.cson`, it would be available in the command palette as “Snippets: Insert Console Log”, or could be referenced in a keymap file as `snippets:insert-console-log`.
+
+If a package called `some-package` had defined that snippet, it would be available in the keymap as `some-package:insert-console-log`, or in the command palette as “Some Package: Insert Console Log”.
+
+Invoking the command would insert the snippet at the cursor, replacing any text that may be selected.
+
 ### Optional parameters
+
 These parameters are meant to provide extra information about your snippet to [autocomplete-plus](https://github.com/atom/autocomplete-plus/wiki/Provider-API).
 
 * `leftLabel` will add text to the left part of the autocomplete results box.
