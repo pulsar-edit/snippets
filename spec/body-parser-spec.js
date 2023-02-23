@@ -563,7 +563,7 @@ the quick brown $1fox \${2:jumped \${3:over}
         index: 1,
         content: [],
         substitution: {
-          find: /(.)/,
+          find: /(.)/g,
           replace: [
             {escape: 'u'},
             {backreference: 1}
@@ -601,7 +601,7 @@ the quick brown $1fox \${2:jumped \${3:over}
         index: 1,
         content: [],
         substitution: {
-          find: /(.)/,
+          find: /(.)/g,
           replace: [
             {escape: 'u'},
             {backreference: 1}
@@ -625,7 +625,7 @@ the quick brown $1fox \${2:jumped \${3:over}
         index: 1,
         content: [],
         substitution: {
-          find: /(.)(.*)/,
+          find: /(.)(.*)/g,
           replace: [
             {escape: 'u'},
             {backreference: 1},
@@ -651,7 +651,7 @@ the quick brown $1fox \${2:jumped \${3:over}
         index: 1,
         content: [],
         substitution: {
-          find: /(.)\/(.*)/,
+          find: /(.)\/(.*)/g,
           replace: [
             {escape: 'u'},
             {backreference: 1},
