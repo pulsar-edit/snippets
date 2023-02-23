@@ -265,19 +265,19 @@ third tabstop $3\
           },
           "transform with non-transforming mirrors": {
             prefix: "t13",
-            body: "${1:placeholder}\n${1/(.)/\\u$1/}\n$1"
+            body: "${1:placeholder}\n${1/(.)/\\u$1/g}\n$1"
           },
           "multiple tab stops, some with transforms and some without": {
             prefix: "t14",
-            body: "${1:placeholder} ${1/(.)/\\u$1/} $1 ${2:ANOTHER} ${2/^(.*)$/\\L$1/} $2"
+            body: "${1:placeholder} ${1/(.)/\\u$1/g} $1 ${2:ANOTHER} ${2/^(.*)$/\\L$1/} $2"
           },
           "has a transformed tab stop without a corresponding ordinary tab stop": {
             prefix: 't15',
-            body: "${1/(.)/\\u$1/} & $2"
+            body: "${1/(.)/\\u$1/g} & $2"
           },
           "has a transformed tab stop that occurs before the corresponding ordinary tab stop": {
             prefix: 't16',
-            body: "& ${1/(.)/\\u$1/} & ${1:q}"
+            body: "& ${1/(.)/\\u$1/g} & ${1:q}"
           },
           "has a placeholder that mirrors another tab stop's content": {
             prefix: 't17',
@@ -285,7 +285,7 @@ third tabstop $3\
           },
           "has a transformed tab stop such that it is possible to move the cursor between the ordinary tab stop and its transformed version without an intermediate step": {
             prefix: 't18',
-            body: '// $1\n// ${1/./=/}'
+            body: '// $1\n// ${1/./=/g}'
           },
           "has two tab stops adjacent to one another": {
             prefix: 't19',
@@ -294,6 +294,14 @@ third tabstop $3\
           "has several adjacent tab stops, one of which has a placeholder with reference to another tab stop at its edge": {
             prefix: 't20',
             body: '${1:foo}${2:bar}${3:baz $1}$4'
+          },
+          "banner without global flag": {
+            prefix: "bannerWrong",
+            body: "// $1\n// ${1/./=/}"
+          },
+          "banner with globalFlag": {
+            prefix: "bannerCorrect",
+            body: "// $1\n// ${1/./=/g}"
           }
         }
       });
@@ -901,6 +909,28 @@ FOO
 foo\
 `
         );
+      });
+    });
+
+    describe("when the snippet contains a transformation without a global flag", () => {
+      it("should transform only the first character", () => {
+        editor.setText('bannerWrong');
+        editor.setCursorScreenPosition([0, 11]);
+        simulateTabKeyEvent();
+        expect(editor.getText()).toBe("// \n// ");
+        editor.insertText('TEST');
+        expect(editor.getText()).toBe("// TEST\n// =EST");
+      });
+    });
+
+    describe("when the snippet contains a transformation with a global flag", () => {
+      it("should transform all characters", () => {
+        editor.setText('bannerCorrect');
+        editor.setCursorScreenPosition([0, 13]);
+        simulateTabKeyEvent();
+        expect(editor.getText()).toBe("// \n// ");
+        editor.insertText('TEST');
+        expect(editor.getText()).toBe("// TEST\n// ====");
       });
     });
 
