@@ -1,13 +1,12 @@
 # Snippets package
-[![macOS Build Status](https://travis-ci.org/atom/snippets.svg?branch=master)](https://travis-ci.org/atom/snippets) [![Windows Build Status](https://ci.appveyor.com/api/projects/status/8hlc0onofkgbxw53/branch/master?svg=true)](https://ci.appveyor.com/project/Atom/snippets/branch/master) [![Dependency Status](https://david-dm.org/atom/snippets.svg)](https://david-dm.org/atom/snippets)
 
-Expand snippets matching the current prefix with <kbd>tab</kbd> in Atom.
+Expand snippets matching the current prefix with <kbd>tab</kbd> in Pulsar.
 
-To add your own snippets, select the _Atom > Snippets..._ menu option if you're using macOS, or the _File > Snippets..._ menu option if you're using Windows, or the _Edit > Snippets..._ menu option if you are using Linux.
+To add your own snippets, select the _Pulsar > Snippets..._ menu option if you're using macOS, or the _File > Snippets..._ menu option if you're using Windows, or the _Edit > Snippets..._ menu option if you are using Linux.
 
 ## Snippet Format
 
-Snippets files are stored in a package's `snippets/` folder and also loaded from `~/.atom/snippets.cson`. They can be either `.json` or `.cson` file types.
+Snippets files are stored in a package's `snippets/` folder and also loaded from `~/.pulsar/snippets.cson`. They can be either `.json` or `.cson` file types.
 
 ```coffee
 '.source.js':
@@ -79,7 +78,7 @@ The outmost key of a snippet is the "scope" that you want the descendent snippet
 
 ![Screenshot of Language Html settings](https://cloud.githubusercontent.com/assets/1038121/5137632/126beb66-70f2-11e4-839b-bc7e84103f67.png)
 
-If it's difficult to determine the package handling the file type in question (for example, for `.md`-documents), you can also proceed as following. Put your cursor in a file in which you want the snippet to be available, open the [Command Palette](https://github.com/atom/command-palette)
+If it's difficult to determine the package handling the file type in question (for example, for `.md`-documents), you can also proceed as following. Put your cursor in a file in which you want the snippet to be available, open the [Command Palette](https://github.com/pulsar-edit/command-palette)
 (<kbd>cmd-shift-p</kbd>), and run the `Editor: Log Cursor Scope` command. This will trigger a notification which will contain a list of scopes. The first scope that's listed is the scope for that language. Here are some examples: `source.coffee`, `text.plain`, `text.html.basic`.
 
 ### Snippet syntax
@@ -130,4 +129,4 @@ Including a literal closing brace inside the text provided by a snippet's tab st
 
 ### Multiple snippets for the same scope
 
-Snippets for the same scope must be placed within the same key. See [this section of the Atom Flight Manual](http://flight-manual.atom.io/using-atom/sections/basic-customization/#configuring-with-cson) for more information.
+Snippets for the same scope must be placed within the same key. See [this section of the Atom Flight Manual](https://pulsar-edit.dev/docs/atom-archive/using-atom/#configuring-with-cson) for more information.
