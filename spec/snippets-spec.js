@@ -20,7 +20,7 @@ describe("Snippets extension", () => {
     spyOn(Snippets, 'loadAll');
     spyOn(Snippets, 'getUserSnippetsPath').andReturn('');
 
-    waitsForPromise(() => atom.workspace.open('sample.js'));
+    waitsForPromise(() => atom.workspace.open(path.join(__dirname, 'fixtures', 'sample.js')));
     waitsForPromise(() => atom.packages.activatePackage('language-javascript'));
     waitsForPromise(() => atom.packages.activatePackage('language-html'));
     waitsForPromise(() => atom.packages.activatePackage('snippets'));
