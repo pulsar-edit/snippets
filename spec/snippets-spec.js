@@ -16,11 +16,13 @@ describe("Snippets extension", () => {
   };
 
   beforeEach(() => {
+    if (atom.notifications != null) { spyOn(atom.notifications, 'addError'); }
     spyOn(Snippets, 'loadAll');
     spyOn(Snippets, 'getUserSnippetsPath').andReturn('');
 
-    waitsForPromise(() => atom.workspace.open('sample.js'));
+    waitsForPromise(() => atom.workspace.open(path.join(__dirname, 'fixtures', 'sample.js')));
     waitsForPromise(() => atom.packages.activatePackage('language-javascript'));
+    waitsForPromise(() => atom.packages.activatePackage('language-html'));
     waitsForPromise(() => atom.packages.activatePackage('snippets'));
 
     runs(() => {
@@ -263,19 +265,19 @@ third tabstop $3\
           },
           "transform with non-transforming mirrors": {
             prefix: "t13",
-            body: "${1:placeholder}\n${1/(.)/\\u$1/}\n$1"
+            body: "${1:placeholder}\n${1/(.)/\\u$1/g}\n$1"
           },
           "multiple tab stops, some with transforms and some without": {
             prefix: "t14",
-            body: "${1:placeholder} ${1/(.)/\\u$1/} $1 ${2:ANOTHER} ${2/^(.*)$/\\L$1/} $2"
+            body: "${1:placeholder} ${1/(.)/\\u$1/g} $1 ${2:ANOTHER} ${2/^(.*)$/\\L$1/} $2"
           },
           "has a transformed tab stop without a corresponding ordinary tab stop": {
             prefix: 't15',
-            body: "${1/(.)/\\u$1/} & $2"
+            body: "${1/(.)/\\u$1/g} & $2"
           },
           "has a transformed tab stop that occurs before the corresponding ordinary tab stop": {
             prefix: 't16',
-            body: "& ${1/(.)/\\u$1/} & ${1:q}"
+            body: "& ${1/(.)/\\u$1/g} & ${1:q}"
           },
           "has a placeholder that mirrors another tab stop's content": {
             prefix: 't17',
@@ -283,7 +285,7 @@ third tabstop $3\
           },
           "has a transformed tab stop such that it is possible to move the cursor between the ordinary tab stop and its transformed version without an intermediate step": {
             prefix: 't18',
-            body: '// $1\n// ${1/./=/}'
+            body: '// $1\n// ${1/./=/g}'
           },
           "has two tab stops adjacent to one another": {
             prefix: 't19',
@@ -292,6 +294,14 @@ third tabstop $3\
           "has several adjacent tab stops, one of which has a placeholder with reference to another tab stop at its edge": {
             prefix: 't20',
             body: '${1:foo}${2:bar}${3:baz $1}$4'
+          },
+          "banner without global flag": {
+            prefix: "bannerWrong",
+            body: "// $1\n// ${1/./=/}"
+          },
+          "banner with globalFlag": {
+            prefix: "bannerCorrect",
+            body: "// $1\n// ${1/./=/g}"
           }
         }
       });
@@ -902,6 +912,28 @@ foo\
       });
     });
 
+    describe("when the snippet contains a transformation without a global flag", () => {
+      it("should transform only the first character", () => {
+        editor.setText('bannerWrong');
+        editor.setCursorScreenPosition([0, 11]);
+        simulateTabKeyEvent();
+        expect(editor.getText()).toBe("// \n// ");
+        editor.insertText('TEST');
+        expect(editor.getText()).toBe("// TEST\n// =EST");
+      });
+    });
+
+    describe("when the snippet contains a transformation with a global flag", () => {
+      it("should transform all characters", () => {
+        editor.setText('bannerCorrect');
+        editor.setCursorScreenPosition([0, 13]);
+        simulateTabKeyEvent();
+        expect(editor.getText()).toBe("// \n// ");
+        editor.insertText('TEST');
+        expect(editor.getText()).toBe("// TEST\n// ====");
+      });
+    });
+
     describe("when the snippet contains multiple tab stops, some with transformations and some without", () => {
       it("does not get confused", () => {
         editor.setText('t14');
@@ -1183,13 +1215,13 @@ foo\
     });
   });
 
-  describe("when atom://.atom/snippets is opened", () => {
-    it("opens ~/.atom/snippets.cson", () => {
+  describe("when atom://.pulsar/snippets is opened", () => {
+    it("opens ~/.pulsar/snippets.cson", () => {
       jasmine.unspy(Snippets, 'getUserSnippetsPath');
       atom.workspace.destroyActivePaneItem();
       const configDirPath = temp.mkdirSync('atom-config-dir-');
       spyOn(atom, 'getConfigDirPath').andReturn(configDirPath);
-      atom.workspace.open('atom://.atom/snippets');
+      atom.workspace.open('atom://.pulsar/snippets');
 
       waitsFor(() => atom.workspace.getActiveTextEditor() != null);
 
@@ -1209,10 +1241,128 @@ foo\
     });
   });
 
+  describe("when a user snippet maps to a command", () => {
+    beforeEach(() => {
+      editor.setText('');
+      Snippets.add(
+        __filename, {
+          ".source.js": {
+            "some command snippet": {
+              body: "lorem ipsum dolor $1 sit ${2:amet}$0",
+              command: "some-command-snippet"
+            },
+            "another command snippet with a prefix": {
+              prefix: 'prfx',
+              command: 'command-with-prefix',
+              body: 'this had $0 a prefix'
+            },
+            "another snippet with neither command nor prefix": {
+              body: 'useless'
+            },
+            "another snippet with a malformed command name": {
+              command: 'i flout the RULES',
+              body: 'inconsiderate'
+            }
+          },
+          ".source.python": {
+            "some python command snippet": {
+              body: "consecuetur $0 adipiscing",
+              command: "some-python-command-snippet"
+            }
+          },
+          ".text.html": {
+            "wrap in tag": {
+              "command": "wrap-in-html-tag",
+              "body": "<${1:div}>$0</${1/[ ]+.*$//}>"
+            }
+          }
+        },
+        'snippets'
+      );
+    });
+
+    afterEach(() => {
+      Snippets.clearSnippetsForPath(__filename);
+    });
+
+    it("registers the command", () => {
+      expect(
+        "snippets:some-command-snippet" in atom.commands.registeredCommands
+      ).toBe(true);
+    });
+
+    it("complains about a malformed command name", () => {
+      const expectedMessage = `Cannot register \`i flout the RULES\` for snippet “another snippet with a malformed command name” because the command name isn’t valid. Command names must be all lowercase and use hyphens between words instead of spaces.`;
+      expect(atom.notifications.addError).toHaveBeenCalledWith(
+        `Snippets error`,
+        {
+          description: expectedMessage,
+          dismissable: true
+        }
+      );
+    });
+
+    describe("and the command is invoked", () => {
+      beforeEach(() => {
+        editor.setText('');
+      });
+
+      it("expands the snippet when the scope matches", () => {
+        atom.commands.dispatch(editor.element, 'snippets:some-command-snippet');
+        let cursor = editor.getLastCursor();
+        let pos = cursor.getBufferPosition();
+        expect(cursor.getBufferPosition()).toEqual([0, 18]);
+
+        expect(editor.getText()).toBe('lorem ipsum dolor  sit amet');
+        editor.insertText("virus");
+        expect(editor.getText()).toBe('lorem ipsum dolor virus sit amet');
+
+        simulateTabKeyEvent();
+        expect(editor.getSelectedBufferRange()).toEqual([[0, 28], [0, 32]]);
+      });
+
+      it("expands the snippet even when a prefix is defined", () => {
+        atom.commands.dispatch(editor.element, 'snippets:command-with-prefix');
+        let cursor = editor.getLastCursor();
+        let pos = cursor.getBufferPosition();
+        expect(pos.toArray().join(',')).toBe('0,9');
+        expect(editor.getText()).toBe('this had  a prefix');
+      });
+
+      it("does nothing when the scope does not match", () => {
+        atom.commands.dispatch(editor.element, 'snippets:some-python-command-snippet');
+        expect(editor.getText()).toBe("");
+      });
+
+    });
+
+    describe("and the command is invoked in an HTML document", () => {
+      beforeEach(() => {
+        atom.grammars.assignLanguageMode(editor, 'text.html.basic');
+        editor.setText('');
+      });
+
+      it("expands tab stops correctly", () => {
+        atom.commands.dispatch(editor.element, 'snippets:wrap-in-html-tag');
+        let cursor = editor.getLastCursor();
+        expect(cursor.getBufferPosition()).toEqual([0, 4]);
+        expect(editor.getSelectedText()).toEqual('div');
+
+        editor.insertText("aside class=\"wat\"");
+
+        expect(editor.getText()).toBe("<aside class=\"wat\"></aside>");
+
+        simulateTabKeyEvent();
+        expect(cursor.getBufferPosition()).toEqual([0, 19]);
+      });
+    });
+  });
+
   describe("when the 'snippets:available' command is triggered", () => {
     let availableSnippetsView = null;
 
     beforeEach(() => {
+      atom.grammars.assignLanguageMode(editor, 'source.js');
       Snippets.add(__filename, {
         ".source.js": {
           "test": {
@@ -1225,8 +1375,7 @@ foo\
             body: "$1: ${2:To pass this challenge}"
           }
         }
-      }
-      );
+      });
 
       delete Snippets.availableSnippetsView;
 
