@@ -1534,7 +1534,8 @@ foo\
           ".source.js": {
             "Uses TM_SELECTED_TEXT": {
               body: 'lorem ipsum $TM_SELECTED_TEXT dolor sit amet',
-              command: 'test-command-tm-selected-text'
+              command: 'test-command-tm-selected-text',
+              prefix: 'tmSelectedText'
             },
             "Uses CLIPBOARD": {
               body: 'lorem ipsum $CLIPBOARD dolor sit amet',
@@ -1597,6 +1598,13 @@ foo\
       expect(editor.getSelectedText()).toBe('(selected text)');
       atom.commands.dispatch(editor.element, 'test-package:test-command-tm-selected-text');
       expect(editor.getText()).toBe('lorem ipsum (selected text) dolor sit amet');
+    });
+
+    it("does not consider the tab trigger to be part of $TM_SELECTED_TEXT when a snippet is invoked via tab trigger", () => {
+      editor.insertText('tmSelectedText');
+      simulateTabKeyEvent();
+
+      expect(editor.getText()).toBe('lorem ipsum  dolor sit amet');
     });
 
     it("interpolates line number variables correctly", () => {
