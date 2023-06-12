@@ -302,6 +302,38 @@ third tabstop $3\
           "banner with globalFlag": {
             prefix: "bannerCorrect",
             body: "// $1\n// ${1/./=/g}"
+          },
+          'TM iftext but no elsetext': {
+            prefix: 'ifelse1',
+            body: '$1 ${1/(wat)/(?1:hey:)/}'
+          },
+          'TM elsetext but no iftext': {
+            prefix: 'ifelse2',
+            body: '$1 ${1/(?:(wat)|^.*$)$/(?1::hey)/}'
+          },
+          'TM both iftext and elsetext': {
+            prefix: 'ifelse3',
+            body: '$1 ${1/^\\w+\\s(?:(wat)|\\w*?)$/(?1:Y:N)/}'
+          },
+          'VS iftext but no elsetext': {
+            prefix: 'vsifelse1',
+            body: '$1 ${1/(?:(wat)|^.*?$)/${1:+WAT}/}'
+          },
+          'VS elsetext but no iftext': {
+            prefix: 'vsifelse2',
+            body: '$1 ${1/(?:(wat)|^.*?$)/${1:-nah}/}'
+          },
+          'VS elsetext but no iftext (alt)': {
+            prefix: 'vsifelse2a',
+            body: '$1 ${1/(?:(wat)|^.*?$)/${1:nah}/}'
+          },
+          'VS both iftext and elsetext': {
+            prefix: 'vsifelse3',
+            body: '$1 ${1/(?:(wat)|^.*?$)/${1:?WAT:nah}/}'
+          },
+          'choice syntax': {
+            prefix: 'choice',
+            body: '${1|one, two, three|}'
           }
         }
       });
@@ -948,6 +980,141 @@ foo\
       });
     });
 
+    describe("when the snippet contains a tab stop with choices", () => {
+      it("uses the first option as the placeholder", () => {
+        editor.setText('');
+        editor.insertText('choice');
+        simulateTabKeyEvent();
+
+        expect(editor.getText()).toBe('one');
+      });
+    });
+
+    describe("when the snippet contains VSCode-style if-else syntax", () => {
+
+      it('understands if but no else', () => {
+        editor.setText('');
+        editor.insertText('vsifelse1');
+        simulateTabKeyEvent();
+
+        editor.insertText('wat');
+        expect(editor.getText()).toEqual('wat WAT');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('vsifelse1');
+        simulateTabKeyEvent();
+
+        editor.insertText('foo');
+        expect(editor.getText()).toEqual('foo ');
+      });
+
+      it('understands else but no if', () => {
+        editor.setText('');
+        editor.insertText('vsifelse2');
+        simulateTabKeyEvent();
+
+        editor.insertText('wat');
+        expect(editor.getText()).toEqual('wat ');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('vsifelse2');
+        simulateTabKeyEvent();
+
+        editor.insertText('foo');
+        expect(editor.getText()).toEqual('foo nah');
+        simulateTabKeyEvent();
+
+        // There are two syntaxes for this.
+        editor.setText('');
+        editor.insertText('vsifelse2a');
+        simulateTabKeyEvent();
+
+        editor.insertText('wat');
+        expect(editor.getText()).toEqual('wat ');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('vsifelse2a');
+        simulateTabKeyEvent();
+
+        editor.insertText('foo');
+        expect(editor.getText()).toEqual('foo nah');
+      });
+
+      it('understands both if and else', () => {
+        editor.setText('');
+        editor.insertText('vsifelse3');
+        simulateTabKeyEvent();
+
+        editor.insertText('wat');
+        expect(editor.getText()).toEqual('wat WAT');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('vsifelse3');
+        simulateTabKeyEvent();
+
+        editor.insertText('foo');
+        expect(editor.getText()).toEqual('foo nah');
+      });
+    });
+
+    describe("when the snippet contains TextMate-style if-else syntax", () => {
+
+      it('understands if but no else', () => {
+        editor.setText('');
+        editor.insertText('ifelse1');
+        simulateTabKeyEvent();
+
+        editor.insertText('wat');
+        expect(editor.getText()).toEqual('wat hey');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('ifelse1');
+        simulateTabKeyEvent();
+
+        editor.insertText('foo');
+        expect(editor.getText()).toEqual('foo foo');
+      });
+
+      it('understands else but no if', () => {
+        editor.setText('');
+        editor.insertText('ifelse2');
+        simulateTabKeyEvent();
+
+        editor.insertText('wat');
+        expect(editor.getText()).toEqual('wat ');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('ifelse2');
+        simulateTabKeyEvent();
+
+        editor.insertText('foo');
+        expect(editor.getText()).toEqual('foo hey');
+      });
+
+      it('understands both if and else', () => {
+        editor.setText('');
+        editor.insertText('ifelse3');
+        simulateTabKeyEvent();
+
+        editor.insertText('something wat');
+        expect(editor.getText()).toEqual('something wat Y');
+        simulateTabKeyEvent();
+
+        editor.setText('');
+        editor.insertText('ifelse3');
+        simulateTabKeyEvent();
+
+        editor.insertText('something foo');
+        expect(editor.getText()).toEqual('something foo N');
+      });
+    });
+
     describe("when the snippet has a transformed tab stop such that it is possible to move the cursor between the ordinary tab stop and its transformed version without an intermediate step", () => {
       it("terminates the snippet upon such a cursor move", () => {
         editor.setText('t18');
@@ -1356,6 +1523,235 @@ foo\
         expect(cursor.getBufferPosition()).toEqual([0, 19]);
       });
     });
+  });
+
+  describe("when a snippet contains variables", () => {
+
+    beforeEach(() => {
+      atom.grammars.assignLanguageMode(editor, 'source.js');
+      Snippets.add(
+        __filename, {
+          ".source.js": {
+            "Uses TM_SELECTED_TEXT": {
+              body: 'lorem ipsum $TM_SELECTED_TEXT dolor sit amet',
+              command: 'test-command-tm-selected-text',
+              prefix: 'tmSelectedText'
+            },
+            "Uses CLIPBOARD": {
+              body: 'lorem ipsum $CLIPBOARD dolor sit amet',
+              command: 'test-command-clipboard'
+            },
+            "Transforms CLIPBOARD removing digits": {
+              body: 'lorem ipsum ${CLIPBOARD/\\d//g} dolor sit amet',
+              command: 'test-command-clipboard-transformed'
+            },
+            "Transforms CLIPBOARD with casing flags": {
+              body: 'lorem ipsum ${CLIPBOARD:/upcase} dolor sit amet\n${CLIPBOARD:/downcase}\n${CLIPBOARD:/camelcase}\n${CLIPBOARD:/pascalcase}\n${CLIPBOARD:/capitalize}',
+              command: 'test-command-clipboard-upcased'
+            },
+            "Transforms day, month, year": {
+              body: 'Today is $CURRENT_MONTH $CURRENT_DATE, $CURRENT_YEAR',
+              command: 'test-command-date'
+            },
+            "Transforms line numbers": {
+              prefix: 'ln',
+              body: 'line is $TM_LINE_NUMBER and index is $TM_LINE_INDEX'
+            },
+            "Transforms workspace name": {
+              prefix: 'wn',
+              body: 'the name of this project is $WORKSPACE_NAME'
+            },
+            "Gives random value": {
+              prefix: 'rndm',
+              body: 'random number is:\n$RANDOM'
+            },
+            "Gives random hex vallue": {
+              prefix: 'rndmhex',
+              body: 'random hex is:\n$RANDOM_HEX'
+            },
+            "Gives random UUID": {
+              prefix: 'rndmuuid',
+              body: 'random UUID is:\n$UUID'
+            },
+            "Gives file paths": {
+              prefix: 'fpath',
+              body: 'file paths:\n$TM_FILEPATH\n$TM_FILENAME\n$TM_FILENAME_BASE'
+            },
+          },
+          ".text.html": {
+            "wrap in tag": {
+              "command": "wrap-in-html-tag",
+              "body": "<${1:div}>${2:$TM_SELECTED_TEXT}</${1/[ ]+.*$//}>$0"
+            }
+          }
+        },
+        'test-package'
+      );
+
+      editor.setText('');
+    });
+
+    it("interpolates the variables into the snippet expansion", () => {
+      editor.insertText('(selected text)');
+      editor.selectToBeginningOfLine();
+
+      expect(editor.getSelectedText()).toBe('(selected text)');
+      atom.commands.dispatch(editor.element, 'test-package:test-command-tm-selected-text');
+      expect(editor.getText()).toBe('lorem ipsum (selected text) dolor sit amet');
+    });
+
+    it("does not consider the tab trigger to be part of $TM_SELECTED_TEXT when a snippet is invoked via tab trigger", () => {
+      editor.insertText('tmSelectedText');
+      simulateTabKeyEvent();
+
+      expect(editor.getText()).toBe('lorem ipsum  dolor sit amet');
+    });
+
+    it("interpolates line number variables correctly", () => {
+      editor.insertText('ln');
+      simulateTabKeyEvent();
+      expect(editor.getText()).toBe('line is 1 and index is 0');
+      editor.setText('');
+      editor.insertText("\n\n\nln");
+      simulateTabKeyEvent();
+      let cursor = editor.getLastCursor();
+      let lineText = editor.lineTextForBufferRow(cursor.getBufferRow());
+      expect(lineText).toBe('line is 4 and index is 3');
+    });
+
+    it("interpolates WORKSPACE_NAME correctly", () => {
+      editor.insertText('wn');
+      simulateTabKeyEvent();
+      expect(editor.getText()).toBe('the name of this project is fixtures');
+    });
+
+    it("interpolates date variables correctly", () => {
+      function pad (val) {
+        let str = String(val);
+        return str.length === 1 ? `0${str}` : str;
+      }
+      let now = new Date();
+      let month = pad(now.getMonth() + 1);
+      let day = pad(now.getDate());
+      let year = now.getFullYear();
+
+      let expected = `Today is ${month} ${day}, ${year}`;
+
+      atom.commands.dispatch(editor.element, 'test-package:test-command-date');
+      expect(editor.getText()).toBe(expected);
+    });
+
+    it("interpolates a CLIPBOARD variable into the snippet expansion", () => {
+      atom.clipboard.write('(clipboard text)');
+      atom.commands.dispatch(editor.element, 'test-package:test-command-clipboard');
+      expect(editor.getText()).toBe('lorem ipsum (clipboard text) dolor sit amet');
+    });
+
+    it("interpolates a transformed variable into the snippet expansion", () => {
+      atom.clipboard.write('(clipboard 19283 text)');
+      atom.commands.dispatch(editor.element, 'test-package:test-command-clipboard-transformed');
+      expect(editor.getText()).toBe('lorem ipsum (clipboard  text) dolor sit amet');
+    });
+
+    it("interpolates an upcased variable", () => {
+      atom.clipboard.write('(clipboard Text is Multiple words)');
+      atom.commands.dispatch(editor.element, 'test-package:test-command-clipboard-upcased');
+      expect(editor.lineTextForBufferRow(0)).toBe('lorem ipsum (CLIPBOARD TEXT IS MULTIPLE WORDS) dolor sit amet');
+      expect(editor.lineTextForBufferRow(1)).toBe('(clipboard text is multiple words)');
+      expect(editor.lineTextForBufferRow(2)).toBe('clipboardTextIsMultipleWords');
+      expect(editor.lineTextForBufferRow(3)).toBe('ClipboardTextIsMultipleWords');
+      // The /capitalize flag will only uppercase the first character, so none
+      // of this clipboard value will be changed.
+      expect(editor.lineTextForBufferRow(4)).toBe('(clipboard Text is Multiple words)');
+    });
+
+    it("interpolates file path variables", () => {
+      editor.insertText('fpath');
+      simulateTabKeyEvent();
+      let filePath = editor.getPath();
+
+      expect(editor.lineTextForBufferRow(0)).toEqual("file paths:");
+      expect(editor.lineTextForBufferRow(1)).toEqual(filePath);
+      expect(editor.lineTextForBufferRow(2)).toEqual('sample.js');
+      expect(editor.lineTextForBufferRow(3)).toEqual('sample');
+    });
+
+    it("generates truly random values for RANDOM, RANDOM_HEX, and UUID", () => {
+      let reUUID = /^[0-9a-fA-F]{8}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{4}\b-[0-9a-fA-F]{12}$/;
+      let reRandom = /^\d{6}$/;
+      let reRandomHex = /^[0-9a-f]{6}$/;
+
+      editor.insertText('rndm');
+      simulateTabKeyEvent();
+      expect(editor.lineTextForBufferRow(0)).toEqual("random number is:");
+      let randomFirst = editor.lineTextForBufferRow(1);
+      expect(reRandom.test(randomFirst)).toBe(true);
+
+      editor.setText('');
+      editor.insertText('rndm');
+      simulateTabKeyEvent();
+
+      let randomSecond = editor.lineTextForBufferRow(1);
+      expect(reRandom.test(randomSecond)).toBe(true);
+      expect(randomSecond).not.toEqual(randomFirst);
+
+      editor.setText('');
+      editor.insertText('rndmhex');
+      simulateTabKeyEvent();
+      let randomHex1 = editor.lineTextForBufferRow(1);
+      expect(reRandomHex.test(randomHex1)).toBe(true);
+
+      editor.setText('');
+      editor.insertText('rndmhex');
+      simulateTabKeyEvent();
+      let randomHex2 = editor.lineTextForBufferRow(1);
+      expect(reRandomHex.test(randomHex2)).toBe(true);
+      expect(randomHex2).not.toEqual(randomHex1);
+
+      // TODO: These tests are commented out because we won't support UUID
+      // until we use a version of Node that implements `crypto.randomUUID`.
+      // It's not crucial enough to require a new external dependency in the
+      // meantime.
+
+      // editor.setText('');
+      // editor.insertText('rndmuuid');
+      // simulateTabKeyEvent();
+      // let randomUUID1 = editor.lineTextForBufferRow(1);
+      // expect(reUUID.test(randomUUID1)).toBe(true);
+      //
+      // editor.setText('');
+      // editor.insertText('rndmuuid');
+      // simulateTabKeyEvent();
+      // let randomUUID2 = editor.lineTextForBufferRow(1);
+      // expect(reUUID.test(randomUUID2)).toBe(true);
+      // expect(randomUUID2).not.toEqual(randomUUID1);
+    });
+
+    describe("and the command is invoked in an HTML document", () => {
+      beforeEach(() => {
+        atom.grammars.assignLanguageMode(editor, 'text.html.basic');
+        editor.setText('');
+      });
+
+      it("combines transformations and variable references", () => {
+        editor.insertText('lorem');
+        editor.selectToBeginningOfLine();
+
+        atom.commands.dispatch(editor.element, 'test-package:wrap-in-html-tag');
+
+        expect(editor.getText()).toBe(
+          `<div>lorem</div>`
+        );
+
+        editor.insertText("aside class=\"wat\"");
+
+        expect(editor.getText()).toBe("<aside class=\"wat\">lorem</aside>");
+
+        simulateTabKeyEvent();
+        expect(editor.getSelectedText()).toEqual('lorem');
+      });
+    });
+
   });
 
   describe("when the 'snippets:available' command is triggered", () => {
