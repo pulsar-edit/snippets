@@ -11,8 +11,7 @@
   "dependencies": {
     "async": "~0.2.6",
     "atom-select-list": "^0.7.0",
-    "loophole": "^1",
-    "pegjs": "~0.8.0",
+    "pegjs": "^0.10.0",
     "scoped-property-store": "^0.17.0",
     "season": "^6.0.2",
     "temp": "~0.8.0",
@@ -25,5 +24,8 @@
         "0.1.0": "provideSnippets"
       }
     }
+  },
+  "devDependencies": {
+    "eslint": "^8.35.0"
   }
 }
