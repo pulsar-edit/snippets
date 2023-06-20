@@ -110,10 +110,19 @@ describe("Snippet Loading", () => {
   });
 
   describe("::loadPackageSnippets(callback)", () => {
+    const jsPackage = () => {
+      const pack = atom.packages.loadPackage('language-javascript')
+      pack.path = path.join(
+        atom.getLoadSettings().resourcePath,
+        'node_modules', 'language-javascript'
+      )
+      return pack
+    }
+
     beforeEach(() => { // simulate a list of packages where the javascript core package is returned at the end
       atom.packages.getLoadedPackages.andReturn([
-        atom.packages.loadPackage('language-javascript'),
-        atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'package-with-snippets'))
+        atom.packages.loadPackage(path.join(__dirname, 'fixtures', 'package-with-snippets')),
+        jsPackage()
       ]);
     });
 
