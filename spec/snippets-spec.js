@@ -5,6 +5,7 @@ const {TextEditor} = require('atom');
 
 describe("Snippets extension", () => {
   let editorElement, editor, languageMode;
+  let modernTreeSitterIsDefault = null;
 
   const simulateTabKeyEvent = (param) => {
     if (param == null) {
@@ -16,6 +17,15 @@ describe("Snippets extension", () => {
   };
 
   beforeEach(async () => {
+    if (modernTreeSitterIsDefault === null) {
+      let oldSetting = atom.config.getSchema('core.useExperimentalModernTreeSitter');
+      if (oldSetting?.type === 'boolean') {
+        modernTreeSitterIsDefault = false;
+      }
+    }
+    if (!modernTreeSitterIsDefault) {
+      atom.config.set('core.useExperimentalModernTreeSitter', true);
+    }
     if (atom.notifications != null) { spyOn(atom.notifications, 'addError'); }
     spyOn(Snippets, 'loadAll');
     spyOn(Snippets, 'getUserSnippetsPath').andReturn('');
