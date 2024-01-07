@@ -4,7 +4,7 @@ const Snippets = require('../lib/snippets');
 const {TextEditor} = require('atom');
 
 describe("Snippets extension", () => {
-  let editorElement, editor;
+  let editorElement, editor, languageMode;
 
   const simulateTabKeyEvent = (param) => {
     if (param == null) {
@@ -15,24 +15,28 @@ describe("Snippets extension", () => {
     atom.keymaps.handleKeyboardEvent(event);
   };
 
-  beforeEach(() => {
+  beforeEach(async () => {
     if (atom.notifications != null) { spyOn(atom.notifications, 'addError'); }
     spyOn(Snippets, 'loadAll');
     spyOn(Snippets, 'getUserSnippetsPath').andReturn('');
 
-    waitsForPromise(() => atom.workspace.open(path.join(__dirname, 'fixtures', 'sample.js')));
-    waitsForPromise(() => atom.packages.activatePackage('language-javascript'));
-    waitsForPromise(() => atom.packages.activatePackage('language-html'));
-    waitsForPromise(() => atom.packages.activatePackage('snippets'));
+    await atom.workspace.open(path.join(__dirname, 'fixtures', 'sample.js'));
+    await atom.packages.activatePackage('language-javascript');
+    await atom.packages.activatePackage('language-html');
+    await atom.packages.activatePackage('snippets');
 
-    runs(() => {
-      editor = atom.workspace.getActiveTextEditor();
-      editorElement = atom.views.getView(editor);
-    });
+    editor = atom.workspace.getActiveTextEditor();
+    editorElement = atom.views.getView(editor);
+    languageMode = editor.getBuffer().getLanguageMode();
+    await languageMode.ready;
+    languageMode.useAsyncParsing = false;
   });
 
-  afterEach(() => {
-    waitsForPromise(() => atom.packages.deactivatePackage('snippets'));
+  afterEach(async () => {
+    if (languageMode) {
+      await languageMode.atTransactionEnd();
+    }
+    await atom.packages.deactivatePackage('snippets');
   });
 
   describe("provideSnippets interface", () => {
@@ -49,13 +53,13 @@ describe("Snippets extension", () => {
         expect(snippetsInterface.bundledSnippetsLoaded()).toBe(true);
       });
 
-      it("resets the loaded state after snippets is deactivated", () => {
+      it("resets the loaded state after snippets is deactivated", async () => {
         expect(snippetsInterface.bundledSnippetsLoaded()).toBe(false);
         Snippets.doneLoading();
         expect(snippetsInterface.bundledSnippetsLoaded()).toBe(true);
 
-        waitsForPromise(() => atom.packages.deactivatePackage('snippets'));
-        waitsForPromise(() => atom.packages.activatePackage('snippets'));
+        await atom.packages.deactivatePackage('snippets');
+        await atom.packages.activatePackage('snippets');
 
         runs(() => {
           expect(snippetsInterface.bundledSnippetsLoaded()).toBe(false);
@@ -604,7 +608,7 @@ third tabstop $3\
       });
 
       describe("when the snippet spans multiple lines", () => {
-        beforeEach(() => {
+        beforeEach(async () => {
           editor.update({autoIndent: true});
           // editor.update() returns a Promise that never gets resolved, so we
           // need to return undefined to avoid a timeout in the spec.
@@ -621,10 +625,12 @@ third tabstop $3\
           expect(editor.getCursorBufferPosition()).toEqual([4, 4]);
         });
 
-        it("indents the subsequent lines of the snippet based on the indent level before the snippet is inserted", () => {
+        it("indents the subsequent lines of the snippet based on the indent level before the snippet is inserted", async () => {
           editor.setCursorScreenPosition([2, Infinity]);
           editor.insertNewline();
+          await languageMode.atTransactionEnd();
           editor.insertText('t4b');
+          await languageMode.atTransactionEnd();
           atom.commands.dispatch(editorElement, 'snippets:expand');
 
           expect(editor.lineTextForBufferRow(3)).toBe("     = line 1 {"); // 4 + 1 spaces (because the tab stop is invisible)
@@ -633,10 +639,12 @@ third tabstop $3\
           expect(editor.getCursorBufferPosition()).toEqual([3, 4]);
         });
 
-        it("does not change the relative positioning of the tab stops when inserted multiple times", () => {
+        it("does not change the relative positioning of the tab stops when inserted multiple times", async () => {
           editor.setCursorScreenPosition([2, Infinity]);
           editor.insertNewline();
+          await languageMode.atTransactionEnd();
           editor.insertText('t4');
+          await languageMode.atTransactionEnd();
           atom.commands.dispatch(editorElement, 'snippets:expand');
 
           expect(editor.getSelectedBufferRange()).toEqual([[3, 9], [3, 10]]);
@@ -644,6 +652,7 @@ third tabstop $3\
           expect(editor.getSelectedBufferRange()).toEqual([[4, 6], [4, 13]]);
 
           editor.insertText('t4');
+          await languageMode.atTransactionEnd();
           atom.commands.dispatch(editorElement, 'snippets:expand');
 
           expect(editor.getSelectedBufferRange()).toEqual([[4, 11], [4, 12]]);
@@ -651,7 +660,9 @@ third tabstop $3\
           expect(editor.getSelectedBufferRange()).toEqual([[5, 8], [5, 15]]);
 
           editor.setText(''); // Clear editor
+          await languageMode.atTransactionEnd();
           editor.insertText('t4');
+          await languageMode.atTransactionEnd();
           atom.commands.dispatch(editorElement, 'snippets:expand');
 
           expect(editor.getSelectedBufferRange()).toEqual([[0, 5], [0, 6]]);
@@ -661,8 +672,9 @@ third tabstop $3\
       });
 
       describe("when multiple snippets match the prefix", () => {
-        it("expands the snippet that is the longest match for the prefix", () => {
+        it("expands the snippet that is the longest match for the prefix", async () => {
           editor.insertText('t113');
+          await languageMode.atTransactionEnd();
           expect(editor.getCursorScreenPosition()).toEqual([0, 4]);
 
           simulateTabKeyEvent();
@@ -673,6 +685,7 @@ third tabstop $3\
           editor.undo();
 
           editor.insertText("tt1");
+          await languageMode.atTransactionEnd();
           expect(editor.getCursorScreenPosition()).toEqual([0, 3]);
 
           simulateTabKeyEvent();
@@ -681,8 +694,10 @@ third tabstop $3\
 
           editor.undo();
           editor.undo();
+          await languageMode.atTransactionEnd();
 
           editor.insertText("@t1");
+          await languageMode.atTransactionEnd();
           expect(editor.getCursorScreenPosition()).toEqual([0, 3]);
 
           simulateTabKeyEvent();
@@ -873,16 +888,17 @@ third tabstop $3\
     });
 
     describe("when the snippet contains tab stops with transformations", () => {
-      it("transforms the text typed into the first tab stop before setting it in the transformed tab stop", () => {
+      it("transforms the text typed into the first tab stop before setting it in the transformed tab stop", async () => {
         editor.setText('t12');
         editor.setCursorScreenPosition([0, 3]);
         simulateTabKeyEvent();
         expect(editor.getText()).toBe("[b][/b]");
+        await languageMode.atTransactionEnd();
         editor.insertText('img src');
         expect(editor.getText()).toBe("[img src][/img]");
       });
 
-      it("bundles the transform mutations along with the original manual mutation for the purposes of undo and redo", () => {
+      it("bundles the transform mutations along with the original manual mutation for the purposes of undo and redo", async () => {
         editor.setText('t12');
         editor.setCursorScreenPosition([0, 3]);
         simulateTabKeyEvent();
@@ -1362,18 +1378,23 @@ foo\
     });
 
     describe("when the editor is not a pane item (regression)", () => {
-      it("handles tab stops correctly", () => {
+      it("handles tab stops correctly", async () => {
         editor = new TextEditor();
         atom.grammars.assignLanguageMode(editor, 'source.js');
+        let languageMode = editor.getBuffer().getLanguageMode();
         editorElement = editor.getElement();
+        await languageMode.ready;
 
         editor.insertText('t2');
+        await languageMode.atTransactionEnd();
         simulateTabKeyEvent();
         editor.insertText('ABC');
+        await languageMode.atTransactionEnd();
         expect(editor.getText()).toContain('go here first:(ABC)');
 
         editor.undo();
         editor.undo();
+        await languageMode.atTransactionEnd();
         expect(editor.getText()).toBe('t2');
         simulateTabKeyEvent();
         editor.insertText('ABC');
