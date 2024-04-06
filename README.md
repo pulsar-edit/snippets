@@ -128,9 +128,27 @@ Pulsar supports the three flags defined in the [LSP snippets specification][lsp]
 
 * `/upcase` (`foo` → `FOO`)
 * `/downcase` (`BAR` → `bar`)
-* `/capitalize` (`lorem ipsum dolor` → `Lorem ipsum dolor`)
+* `/capitalize` (`lorem ipsum dolor` → `Lorem ipsum dolor`) *(first letter uppercased; rest of input left intact)*
 * `/camelcase` (`foo bar` → `fooBar`, `lorem-ipsum.dolor` → `loremIpsumDolor`)
 * `/pascalcase` (`foo bar` → `FooBar`, `lorem-ipsum.dolor` → `LoremIpsumDolor`)
+
+It also supports two other common transformations:
+
+* `/snakecase` (`foo bar` → `foo_bar`, `lorem-ipsum.dolor` → `lorem_ipsum_dolor`)
+* `/kebabcase` (`foo bar` → `foo-bar`, `lorem-ipsum.dolor` → `lorem-ipsum-dolor`)
+
+These transformation flags can also be applied on backreferences in `sed`-style replacements for transformed tab stops. Given the following example snippet body…
+
+```
+[$1] becomes [${1/(.*)/${1:/upcase}/}]
+```
+
+…invoking the snippet and typing `Lorem ipsum dolor` will produce:
+
+```
+[Lorem ipsum dolor] becomes [LOREM IPSUM DOLOR]
+```
+
 
 #### Variable caveats
 

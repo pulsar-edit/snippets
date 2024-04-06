@@ -321,6 +321,46 @@ third tabstop $3\
             prefix: "bannerCorrect",
             body: "// $1\n// ${1/./=/g}"
           },
+          "transform with simple flag on replacement (upcase)": {
+            prefix: 't_simple_upcase',
+            body: "$1 ${1/(.*)/${1:/upcase}/}"
+          },
+          "transform with simple flag on replacement (downcase)": {
+            prefix: 't_simple_downcase',
+            body: "$1 ${1/(.*)/${1:/downcase}/}"
+          },
+          "transform with simple flag on replacement (capitalize)": {
+            prefix: 't_simple_capitalize',
+            body: "$1 ${1/(.*)/${1:/capitalize}/}"
+          },
+          "transform with simple flag on replacement (camelcase)": {
+            prefix: 't_simple_camelcase',
+            body: "$1 ${1/(.*)/${1:/camelcase}/}"
+          },
+          "transform with simple flag on replacement (pascalcase)": {
+            prefix: 't_simple_pascalcase',
+            body: "$1 ${1/(.*)/${1:/pascalcase}/}"
+          },
+          "transform with simple flag on replacement (snakecase)": {
+            prefix: 't_simple_snakecase',
+            body: "$1 ${1/(.*)/${1:/snakecase}/}"
+          },
+          "transform with simple flag on replacement (kebabcase)": {
+            prefix: 't_simple_kebabcase',
+            body: "$1 ${1/(.*)/${1:/kebabcase}/}"
+          },
+          "variable reference with simple flag on replacement (upcase)": {
+            prefix: 'v_simple_upcase',
+            body: "$CLIPBOARD ${CLIPBOARD/(\\S*)(.*)/${1}${2:/upcase}/}$0"
+          },
+          "variable reference with simple flag on replacement (pascal)": {
+            prefix: 'v_simple_pascalcase',
+            body: "$CLIPBOARD ${CLIPBOARD/(\\S*)(.*)/${1} ${2:/pascalcase}/}$0"
+          },
+          "variable reference with simple flag on replacement (snakecase)": {
+            prefix: 'v_simple_snakecase',
+            body: "$CLIPBOARD ${CLIPBOARD/(\\S*)(.*)/${1} ${2:/snakecase}/}$0"
+          },
           'TM iftext but no elsetext': {
             prefix: 'ifelse1',
             body: '$1 ${1/(wat)/(?1:hey:)/}'
@@ -1047,6 +1087,48 @@ foo\
           expect(editor.getText()).toBe("# TEST\n# ====");
         });
       });
+    });
+
+    describe("when the snippet contains a transformation with a simple transform flag on a substitution", () => {
+      let expectations = {
+        upcase: `LOREM IPSUM DOLOR`,
+        downcase: `lorem ipsum dolor`,
+        capitalize: `Lorem Ipsum Dolor`,
+        camelcase: 'loremIpsumDolor',
+        pascalcase: 'LoremIpsumDolor',
+        snakecase: 'lorem_ipsum_dolor',
+        kebabcase: 'lorem-ipsum-dolor'
+      };
+      for (let [flag, expected] of Object.entries(expectations)) {
+        it(`should transform ${flag} correctly`, () => {
+          let trigger = `t_simple_${flag}`;
+          editor.setText(trigger);
+          editor.setCursorScreenPosition([0, trigger.length]);
+          simulateTabKeyEvent();
+          editor.insertText('lorem Ipsum Dolor');
+          expect(editor.getText()).toBe(`lorem Ipsum Dolor ${expected}`);
+        });
+      }
+    });
+
+    describe("when the snippet contains a variable with a simple transform flag within a sed-style substitution", () => {
+      let expectations = {
+        upcase: 'lorem IPSUM DOLOR',
+        pascalcase: 'lorem IpsumDolor',
+        snakecase: 'lorem ipsum_dolor',
+      };
+      for (let [flag, expected] of Object.entries(expectations)) {
+        it(`should transform ${flag} correctly`, () => {
+          atom.clipboard.write('lorem Ipsum Dolor');
+          let trigger = `v_simple_${flag}`;
+          console.log('expanding:', trigger);
+          editor.setText(trigger);
+          editor.setCursorScreenPosition([0, trigger.length]);
+          simulateTabKeyEvent();
+          console.log('TEXT:', editor.getText());
+          expect(editor.getText()).toBe(`lorem Ipsum Dolor ${expected}`);
+        });
+      }
     });
 
     describe("when the snippet contains multiple tab stops, some with transformations and some without", () => {
