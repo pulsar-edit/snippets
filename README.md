@@ -105,7 +105,7 @@ The following features from VSCode snippets are not yet supported:
 
 Pulsar snippets support all of the variables mentioned in the [LSP specification][lsp], plus many of the variables [supported by VSCode][vscode].
 
-Variables can be referenced with `$`, either without braces (`$CLIPBOARD`) or with braces (`${CLIPBOARD}`). Variables can also have fallback values (`${CLIPBOARD:http://example.com}`), simple flag-based transformations (`${CLIPBOARD:/upcase}`), or `sed`-style transformations `${CLIPBOARD/ /_/g}`.
+Variables can be referenced with `$`, either without braces (`$CLIPBOARD`) or with braces (`${CLIPBOARD}`). Variables can also have fallback values (`${CLIPBOARD:http://example.com}`), simple flag-based transformations (`${CLIPBOARD:/upcase}`), or `sed`-style transformations (`${CLIPBOARD/ /_/g}`).
 
 One of the most useful is `TM_SELECTED_TEXT`, which represents whatever text was selected when the snippet was invoked. (Naturally, this can only happen when a snippet is invoked via command or key shortcut, rather than by typing in a <kbd>Tab</kbd> trigger.)
 
@@ -118,8 +118,9 @@ Others that can be useful:
 * `TM_CURRENT_WORD`: The entire word that the cursor is within or adjacent to, as interpreted by `cursor.getCurrentWordBufferRange`.
 * `CLIPBOARD`: The current contents of the clipboard.
 * `CURRENT_YEAR`, `CURRENT_MONTH`, et cetera: referneces to the current date and time in various formats.
+* `LINE_COMMENT`, `BLOCK_COMMENT_START`, `BLOCK_COMMENT_END`: uses the correct comment delimiters for whatever language you’re in.
 
-Any variable that has no value — for instance, `TM_FILENAME` on an untitled document — will resolve to an empty string.
+Any variable that has no value — for instance, `TM_FILENAME` on an untitled document, or `LINE_COMMENT` in a CSS file — will resolve to an empty string.
 
 #### Variable transformation flags
 
@@ -140,10 +141,7 @@ Pulsar supports the three flags defined in the [LSP snippets specification][lsp]
 
 Of the variables supported by VSCode, Pulsar does not yet support:
 
-* `UUID`
-* `BLOCK_COMMENT_START`
-* `BLOCK_COMMENT_END`
-* `LINE_COMMENT`
+* `UUID` (Will automatically be supported when Pulsar uses a version of Electron that has native `crypto.randomUUID`.)
 
 ## Multi-line Snippet Body
 
