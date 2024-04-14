@@ -2,6 +2,9 @@ const path = require('path');
 const temp = require('temp').track();
 const Snippets = require('../lib/snippets');
 const {TextEditor} = require('atom');
+const crypto = require('crypto');
+
+const SUPPORTS_UUID = ('randomUUID' in crypto) && (typeof crypto.randomUUID === 'function');
 
 describe("Snippets extension", () => {
   let editorElement, editor, languageMode;
@@ -32,6 +35,7 @@ describe("Snippets extension", () => {
 
     await atom.workspace.open(path.join(__dirname, 'fixtures', 'sample.js'));
     await atom.packages.activatePackage('language-javascript');
+    await atom.packages.activatePackage('language-python');
     await atom.packages.activatePackage('language-html');
     await atom.packages.activatePackage('snippets');
 
@@ -348,6 +352,15 @@ third tabstop $3\
           'choice syntax': {
             prefix: 'choice',
             body: '${1|one, two, three|}'
+          }
+        }
+      });
+
+      Snippets.add(__filename, {
+        ".source, .text": {
+          "banner with generic comment delimiters": {
+            prefix: "bannerGeneric",
+            body: "$LINE_COMMENT $1\n$LINE_COMMENT ${1/./=/g}"
           }
         }
       });
@@ -992,6 +1005,50 @@ foo\
       });
     });
 
+    describe("when the snippet contains generic line comment delimiter variables", () => {
+      describe("and the document is JavaScript", () => {
+        it("uses the right delimiters", () => {
+          editor.setText('bannerGeneric');
+          editor.setCursorScreenPosition([0, 13]);
+          simulateTabKeyEvent();
+          expect(editor.getText()).toBe("// \n// ");
+          editor.insertText('TEST');
+          expect(editor.getText()).toBe("// TEST\n// ====");
+        });
+      });
+
+      describe("and the document is HTML", () => {
+        beforeEach(() => {
+          atom.grammars.assignLanguageMode(editor, 'text.html.basic');
+          editor.setText('');
+        });
+
+        it("falls back to an empty string, for HTML has no line comment", () => {
+          editor.setText('bannerGeneric');
+          editor.setCursorScreenPosition([0, 13]);
+          simulateTabKeyEvent();
+          expect(editor.getText()).toBe(" \n ");
+          editor.insertText('TEST');
+          expect(editor.getText()).toBe(" TEST\n ====");
+        });
+      });
+
+      describe("and the document is Python", () => {
+        beforeEach(() => {
+          atom.grammars.assignLanguageMode(editor, 'source.python');
+          editor.setText('');
+        });
+        it("uses the right delimiters", () => {
+          editor.setText('bannerGeneric');
+          editor.setCursorScreenPosition([0, 13]);
+          simulateTabKeyEvent();
+          expect(editor.getText()).toBe("# \n# ");
+          editor.insertText('TEST');
+          expect(editor.getText()).toBe("# TEST\n# ====");
+        });
+      });
+    });
+
     describe("when the snippet contains multiple tab stops, some with transformations and some without", () => {
       it("does not get confused", () => {
         editor.setText('t14');
@@ -1468,6 +1525,12 @@ foo\
               command: "some-python-command-snippet"
             }
           },
+          ".source, .text": {
+            "wrap in block comment": {
+              body: "$BLOCK_COMMENT_START $TM_SELECTED_TEXT ${BLOCK_COMMENT_END}${0}",
+              command: 'wrap-in-block-comment'
+            }
+          },
           ".text.html": {
             "wrap in tag": {
               "command": "wrap-in-html-tag",
@@ -1532,6 +1595,13 @@ foo\
         expect(editor.getText()).toBe("");
       });
 
+      it("uses language-specific comment delimiters", () => {
+        editor.setText("something");
+        editor.selectAll();
+        atom.commands.dispatch(editor.element, 'snippets:wrap-in-block-comment');
+        expect(editor.getText()).toBe("/* something */");
+      });
+
     });
 
     describe("and the command is invoked in an HTML document", () => {
@@ -1553,6 +1623,29 @@ foo\
         simulateTabKeyEvent();
         expect(cursor.getBufferPosition()).toEqual([0, 19]);
       });
+
+      it("uses language-specific comment delimiters", () => {
+        editor.setText("something");
+        editor.selectAll();
+        atom.commands.dispatch(editor.element, 'snippets:wrap-in-block-comment');
+        expect(editor.getText()).toBe("<!-- something -->");
+      });
+
+    });
+
+    describe("and the command is invoked in a Python document", () => {
+      beforeEach(() => {
+        atom.grammars.assignLanguageMode(editor, 'source.python');
+        editor.setText('');
+      });
+
+      it("uses language-specific comment delimiters, or empty strings if those delimiters don't exist in Python", () => {
+        editor.setText("something");
+        editor.selectAll();
+        atom.commands.dispatch(editor.element, 'snippets:wrap-in-block-comment');
+        expect(editor.getText()).toBe(" something ");
+      });
+
     });
   });
 
@@ -1739,23 +1832,22 @@ foo\
       expect(reRandomHex.test(randomHex2)).toBe(true);
       expect(randomHex2).not.toEqual(randomHex1);
 
-      // TODO: These tests are commented out because we won't support UUID
-      // until we use a version of Node that implements `crypto.randomUUID`.
-      // It's not crucial enough to require a new external dependency in the
-      // meantime.
+      // TODO: These tests will start running when we use a version of Electron
+      // that supports `crypto.randomUUID`.
+      if (SUPPORTS_UUID) {
+        editor.setText('');
+        editor.insertText('rndmuuid');
+        simulateTabKeyEvent();
+        let randomUUID1 = editor.lineTextForBufferRow(1);
+        expect(reUUID.test(randomUUID1)).toBe(true);
 
-      // editor.setText('');
-      // editor.insertText('rndmuuid');
-      // simulateTabKeyEvent();
-      // let randomUUID1 = editor.lineTextForBufferRow(1);
-      // expect(reUUID.test(randomUUID1)).toBe(true);
-      //
-      // editor.setText('');
-      // editor.insertText('rndmuuid');
-      // simulateTabKeyEvent();
-      // let randomUUID2 = editor.lineTextForBufferRow(1);
-      // expect(reUUID.test(randomUUID2)).toBe(true);
-      // expect(randomUUID2).not.toEqual(randomUUID1);
+        editor.setText('');
+        editor.insertText('rndmuuid');
+        simulateTabKeyEvent();
+        let randomUUID2 = editor.lineTextForBufferRow(1);
+        expect(reUUID.test(randomUUID2)).toBe(true);
+        expect(randomUUID2).not.toEqual(randomUUID1);
+      }
     });
 
     describe("and the command is invoked in an HTML document", () => {
