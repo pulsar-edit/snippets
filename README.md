@@ -1,3 +1,4 @@
+# Archived under Pulsar-Edit due to being bundled within the editor in [`pulsar#993`](https://github.com/pulsar-edit/pulsar/pull/993)
 # Snippets package
 
 Expand snippets matching the current prefix with <kbd>tab</kbd> in Pulsar.
